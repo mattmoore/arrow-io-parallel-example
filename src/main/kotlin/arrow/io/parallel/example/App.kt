@@ -12,12 +12,18 @@ fun getFileContent(file: String) = IO<String> {
     java.io.File(file).readText()
 }
 
-fun combineFilesSequential(files: List<String>) = IO.fx {
+fun saveFile(file: String, content: String) = IO<Unit> {
+    java.io.File(file).writeText(content)
+}
+
+fun combineFilesSequential(files: List<String>, destinationFile: String) = IO.fx {
     val part1 = !getFileContent(files[0])
     val part2 = !getFileContent(files[1])
     val part3 = !getFileContent(files[2])
     val part4 = !getFileContent(files[3])
-    part1 + part2 + part3 + part4
+    val full = part1 + part2 + part3 + part4
+    !saveFile(destinationFile, full)
+    full
 }
 
 fun combineFilesParMapN(files: List<String>) = IO.dispatchers().default().parMapN(
@@ -29,11 +35,13 @@ fun combineFilesParMapN(files: List<String>) = IO.dispatchers().default().parMap
     a + b + c + d
 }
 
-fun combineFilesParallelTraverse(files: List<String>) = IO.fx {
-    val contents = !files.parTraverse {
+fun combineFilesParallelTraverse(files: List<String>, destinationFile: String) = IO.fx {
+    val contentLines = !files.parTraverse {
         getFileContent(it)
     }
-    contents.joinToString("")
+    val fullContent = contentLines.joinToString("")
+    !saveFile(destinationFile, fullContent)
+    fullContent
 }
 
 fun main(args: Array<String>) {
@@ -46,7 +54,7 @@ fun main(args: Array<String>) {
 
     val sequentialTime = measureTimeMillis {
         // Sequential load. Takes around 8+ seconds.
-        combineFilesSequential(fileList).attempt().map {
+        combineFilesSequential(fileList, "data/full-sequential.txt").attempt().map {
             when (it) {
                 is Either.Left -> println("Could not load files.")
                 is Either.Right -> println(it.b)
@@ -58,7 +66,7 @@ fun main(args: Array<String>) {
 
     val parTraverseTime = measureTimeMillis {
         // Parallel load. Takes around 2+ seconds.
-        combineFilesParallelTraverse(fileList).attempt().map {
+        combineFilesParallelTraverse(fileList, "data/full-parallel.txt").attempt().map {
             when (it) {
                 is Either.Left -> println("Could not load all files.")
                 is Either.Right -> println(it.b)

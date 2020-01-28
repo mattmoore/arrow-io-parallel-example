@@ -44,7 +44,7 @@ fun combineFilesParallelTraverse(files: List<String>, destinationFile: String) =
     fullContent
 }
 
-fun main(args: Array<String>) {
+suspend fun main(args: Array<String>) {
     val fileList = listOf(
             "data/part1.txt",
             "data/part2.txt",
@@ -59,7 +59,7 @@ fun main(args: Array<String>) {
                 is Either.Left -> println("Could not load files.")
                 is Either.Right -> println(it.b)
             }
-        }.unsafeRunSync()
+        }.suspended()
     }
 
     println("Sequential Time: $sequentialTime\n")
@@ -71,7 +71,7 @@ fun main(args: Array<String>) {
                 is Either.Left -> println("Could not load all files.")
                 is Either.Right -> println(it.b)
             }
-        }.unsafeRunSync()
+        }.suspended()
     }
 
     println("ParTraverse Time: $parTraverseTime\n")

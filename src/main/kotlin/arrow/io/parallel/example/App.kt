@@ -5,6 +5,7 @@ import arrow.fx.IO
 import arrow.fx.extensions.fx
 import arrow.fx.extensions.io.concurrent.parMapN
 import arrow.fx.extensions.io.dispatchers.dispatchers
+import arrow.fx.handleError
 import kotlin.system.measureTimeMillis
 
 fun getFileContent(file: String) = IO<String> {
@@ -56,10 +57,10 @@ suspend fun main(args: Array<String>) {
         // Sequential load. Takes around 8+ seconds.
         combineFilesSequential(fileList, "data/full-sequential.txt").attempt().map {
             when (it) {
-                is Either.Left -> println("Could not load files.")
+                is Either.Left -> println(it.a.message)
                 is Either.Right -> println(it.b)
             }
-        }.suspended()
+        }.handleError { println("Failed loading file.") }.suspended()
     }
 
     println("Sequential Time: $sequentialTime\n")
@@ -68,7 +69,7 @@ suspend fun main(args: Array<String>) {
         // Parallel load. Takes around 2+ seconds.
         combineFilesParallelTraverse(fileList, "data/full-parallel.txt").attempt().map {
             when (it) {
-                is Either.Left -> println("Could not load all files.")
+                is Either.Left -> println(it.a.message)
                 is Either.Right -> println(it.b)
             }
         }.suspended()
